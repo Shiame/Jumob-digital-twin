@@ -13,9 +13,8 @@ L'adapter utilise une architecture réactive basée sur les WebSockets :
 
 ## Prérequis
 
-- Java 21+
 - Plateforme GAMA avec le "Server Mode" activé sur le port par défaut (6868).
-- Un broker Kafka tournant localement (ex: config `docker-compose`).
+- Un broker Kafka tournant localement.
 
 ## Configuration
 
@@ -37,15 +36,9 @@ kafka.topic.gama-state=gama-state
 
 ## Compilation & Exécution
 
-1. Démarrer GAMA avec le mode serveur activé ("Save" puis redémarrer l'application).
-2. Démarrer Zookeeper et Kafka (`docker-compose up -d`).
-3. Compiler et lancer l'application Spring Boot :
-
-```bash
-cd gama-adapter
-./mvnw clean install
-./mvnw spring-boot:run
-```
+1. Démarrer GAMA avec le mode serveur activé.
+2. Démarrer Zookeeper et Kafka.
+3. Compiler et lancer l'application Spring Boot
 
 Le service expose des endpoints basiques de monitoring :
 - Info sur le flux : `http://localhost:8081/api/status`
