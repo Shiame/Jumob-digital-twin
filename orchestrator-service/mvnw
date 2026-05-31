@@ -1,0 +1,27 @@
+#!/bin/sh
+# Maven Wrapper script
+# Adapted from https://github.com/apache/maven-wrapper
+
+set -e
+
+MAVEN_PROJECTBASEDIR="${MAVEN_BASEDIR:-$(cd "$(dirname "$0")" && pwd)}"
+MAVEN_WRAPPER_JAR="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar"
+MAVEN_WRAPPER_PROPERTIES="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
+
+if [ -r "$MAVEN_WRAPPER_PROPERTIES" ]; then
+    MAVEN_URL=$(grep 'distributionUrl' "$MAVEN_WRAPPER_PROPERTIES" | cut -d'=' -f2-)
+fi
+
+MAVEN_HOME="$HOME/.m2/wrapper/dists/apache-maven-3.9.9"
+
+if [ ! -d "$MAVEN_HOME" ]; then
+    echo "Downloading Maven..."
+    mkdir -p "$MAVEN_HOME"
+    TMPFILE=$(mktemp)
+    curl -sL "$MAVEN_URL" -o "$TMPFILE"
+    unzip -q "$TMPFILE" -d "$MAVEN_HOME"
+    rm "$TMPFILE"
+fi
+
+MAVEN_BIN=$(find "$MAVEN_HOME" -name mvn -type f | head -1)
+exec "$MAVEN_BIN" "$@"

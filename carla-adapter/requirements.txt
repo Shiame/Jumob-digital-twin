@@ -1,0 +1,19 @@
+# CARLA Adapter Dependencies
+# ===========================
+
+# CARLA Python API (only needed in real mode, installed separately on OcciData)
+# carla==0.9.15
+
+# Kafka
+confluent-kafka==2.6.1
+
+# Data validation & configuration
+pydantic==2.10.0
+pydantic-settings==2.7.0
+
+# REST API
+fastapi==0.115.0
+uvicorn==0.32.0
+
+# Utilities
+python-dotenv==1.0.1

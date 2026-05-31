@@ -37,3 +37,30 @@ services:
       KAFKA_CLUSTERS_0_NAME: midoc-digital-twin
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+# carla-adapter:
+#   build: ./carla-adapter
+#   container_name: carla-adapter
+#   depends_on:
+#     - kafka
+#   ports:
+#     - 8084:8084
+#   environment:
+#     MOCK_MODE: "true"
+#     KAFKA_BROKER: kafka:29092
+#     KAFKA_TOPIC: carla-state
+#     CARLA_HOST: "127.0.0.1"
+#     CARLA_PORT: 2000
+#     API_HOST: "0.0.0.0"
+#     API_PORT: 8084
+
+# orchestrator-service:
+#   build: ./orchestrator-service
+#   container_name: orchestrator-service
+#   depends_on:
+#     - kafka
+#   ports:
+#     - 8085:8080
+#   environment:
+#     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#     SERVER_PORT: 8080
