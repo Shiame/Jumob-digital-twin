@@ -98,6 +98,9 @@ async def websocket_endpoint(websocket: WebSocket):
         active_connections.remove(websocket)
         logger.info(f"Client disconnected. Total clients: {len(active_connections)}")
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 @app.get("/api/status")
 def get_status():
     return {
@@ -106,6 +109,18 @@ def get_status():
         "topics": TOPICS,
         "connected_clients": len(active_connections)
     }
+
+# Serve the React frontend static files
+frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+
+if os.path.exists(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+
+    @app.get("/")
+    def serve_react_app():
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    logger.warning(f"Frontend dist folder not found at {frontend_dist}. Please run 'npm run build' in the frontend directory.")
 
 if __name__ == "__main__":
     import uvicorn

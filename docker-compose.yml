@@ -64,3 +64,13 @@ services:
 #   environment:
 #     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 #     SERVER_PORT: 8080
+
+  dashboard-service:
+    build: ./dashboard-service
+    container_name: dashboard-service
+    depends_on:
+      - kafka
+    ports:
+      - 8085:8085
+    environment:
+      KAFKA_BROKER: kafka:29092
