@@ -39,13 +39,19 @@ def transform_actor(actor, carla_map=None) -> VehicleState:
     vz = round(velocity.z, 4)
 
     # Convert CARLA local coordinates to geographic (WGS84) coordinates
+    # 🎯 DIGITAL TWIN ALIGNMENT OFFSET 🎯
+    # We ADD the offset so that CARLA's raw coordinates are shifted to match GAMA's absolute GPS grid.
+    from config import settings
     latitude = 0.0
     longitude = 0.0
     if carla_map is not None:
         try:
             geo = carla_map.transform_to_geolocation(transform.location)
-            latitude = round(geo.latitude, 8)
-            longitude = round(geo.longitude, 8)
+            
+            # Apply abs() in case CARLA's mapping flips hemispheres, and ADD the offset
+            # so the orchestrator sees the exact GAMA coordinates.
+            latitude = round(abs(geo.latitude) + settings.GAMA_VIS_LAT_OFFSET, 8)
+            longitude = round(abs(geo.longitude) + settings.GAMA_VIS_LON_OFFSET, 8)
         except Exception as e:
             logger.warning("Failed to convert to geolocation for actor %d: %s", actor.id, e)
 

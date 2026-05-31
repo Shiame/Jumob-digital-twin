@@ -184,6 +184,12 @@ class CarlaConnectorService(BaseCarlaConnector):
     def _on_collision(self, event):
         """Callback for collision events from the sensor."""
         other = event.other_actor
+        other_type = other.type_id if other else "unknown"
+
+        # Ignorer les collisions avec le sol ou le décor (static.unknown, static.road, etc.) pour éviter le spam
+        if "static" in other_type:
+            return
+
         loc = event.transform.location
         impulse = event.normal_impulse
         intensity = math.sqrt(impulse.x**2 + impulse.y**2 + impulse.z**2)
@@ -250,48 +256,24 @@ class CarlaConnectorService(BaseCarlaConnector):
         if self._ego_vehicle is None:
             self._find_ego_vehicle()
         if self._ego_vehicle is None:
-            logger.warning("❌ No ego vehicle found — cannot apply SET_SPEED_LIMIT (reason=%s)", reason)
+            logger.warning("No ego vehicle found — cannot apply SET_SPEED_LIMIT (reason=%s)", reason)
             return
 
-        logger.info("✅ GEO-PROXIMITY: Applying speed limit %d km/h to ego vehicle (reason=%s)",
-                     speed_kmh, reason)
-
-        # Apply via Traffic Manager
+        # Apply via Traffic Manager (keep autopilot, just slow down)
         try:
             tm = self._client.get_trafficmanager()
-            if speed_kmh <= 20:
-                tm.vehicle_percentage_speed_difference(self._ego_vehicle, 80)
-                logger.info("🐢 TrafficManager: 80%% speed reduction")
-            elif speed_kmh <= 30:
-                tm.vehicle_percentage_speed_difference(self._ego_vehicle, 60)
-                logger.info("🐢 TrafficManager: 60%% speed reduction")
-            else:
-                tm.vehicle_percentage_speed_difference(self._ego_vehicle, 40)
-                logger.info("🐢 TrafficManager: 40%% speed reduction")
+            # Calculate precise reduction: default city speed is 30 km/h
+            reduction_pct = max(0.0, min(100.0, (30.0 - speed_kmh) / 30.0 * 100.0))
+            tm.vehicle_percentage_speed_difference(self._ego_vehicle, reduction_pct)
+            # Throttle logging: only log every 30 seconds
+            import time as _time
+            now = _time.time()
+            if not hasattr(self, '_last_speed_log') or now - self._last_speed_log > 30:
+                self._last_speed_log = now
+                logger.info("GEO-PROXIMITY: speed=%d km/h, reduction=%.0f%%, reason=%s",
+                             speed_kmh, reduction_pct, reason)
         except Exception as e:
             logger.error("Failed to set TrafficManager speed: %s", e)
-
-        # Apply visible braking for demo
-        try:
-            self._ego_vehicle.apply_control(
-                carla_module.VehicleControl(throttle=0.0, brake=0.5)
-            )
-            logger.info("🛑 Braking applied for visible deceleration")
-
-            def release_brake():
-                try:
-                    self._ego_vehicle.apply_control(
-                        carla_module.VehicleControl(throttle=0.2, brake=0.0)
-                    )
-                    logger.info("🟢 Brake released, gentle throttle applied")
-                except Exception as ex:
-                    logger.error("Failed to release brake: %s", ex)
-
-            timer = threading.Timer(1.0, release_brake)
-            timer.daemon = True
-            timer.start()
-        except Exception as e:
-            logger.error("Failed to apply braking control: %s", e)
 
     def set_speed_limit(self, speed_kmh: int):
         """Limit the ego vehicle speed via Traffic Manager (legacy, no road check)."""

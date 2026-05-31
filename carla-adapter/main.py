@@ -183,8 +183,8 @@ def main():
                 )
 
             # 6. Wait for next tick
-            # Ralentissement extrême pour la démo : 1 message toutes les 5 secondes
-            _shutdown_event.wait(timeout=5.0)
+            # Sync at 10Hz to ensure smooth real-time visualization of GAMA agents
+            _shutdown_event.wait(timeout=0.1)
 
     except Exception as e:
         logger.error("Unexpected error in main loop: %s", e, exc_info=True)

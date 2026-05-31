@@ -32,11 +32,13 @@ class Settings(BaseSettings):
     # --- GAMA Visualization ---
     KAFKA_GAMA_STATE_TOPIC: str = Field(default="gama-state", description="Kafka topic for incoming GAMA state events")
     GAMA_VIS_MAX_AGENTS: int = Field(default=20, description="Max GAMA agents to display per tick (avoid overloading CARLA)")
-    GAMA_VIS_MARKER_LIFETIME: float = Field(default=0.5, description="Debug marker lifetime in seconds (refreshed every tick)")
+    # ⚠️ FIX : main.py has a 5.0s sleep delay. If lifetime is 0.5s, the markers blink and disappear for 4.5s!
+    GAMA_VIS_MARKER_LIFETIME: float = Field(default=5.5, description="Debug marker lifetime in seconds (refreshed every tick)")
     GAMA_VIS_Z_OFFSET: float = Field(default=1.5, description="Meters above road surface for marker visibility")
-    GAMA_VIS_LAT_OFFSET: float = Field(default=0.0, description="Latitude offset to correct systematic geo-shift")
-    GAMA_VIS_LON_OFFSET: float = Field(default=0.0, description="Longitude offset to correct systematic geo-shift")
+    GAMA_VIS_LAT_OFFSET: float = Field(default=0.01162391, description="Latitude offset to correct systematic geo-shift")
+    GAMA_VIS_LON_OFFSET: float = Field(default=0.00899006, description="Longitude offset to correct systematic geo-shift")
     GAMA_VIS_ENABLED: bool = Field(default=True, description="Master switch for GAMA agent visualization")
+    GAMA_VIS_DISABLE_PHYSICS: bool = Field(default=True, description="Disable physics on spawned pedestrians (True for OpenDRIVE-only maps, False for full 3D maps)")
 
     # --- API ---
     API_HOST: str = Field(default="0.0.0.0", description="FastAPI host")

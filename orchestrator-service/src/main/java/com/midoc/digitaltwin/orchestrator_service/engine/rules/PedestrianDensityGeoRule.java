@@ -178,21 +178,23 @@ public class PedestrianDensityGeoRule implements CoSimRule {
             speedLimit = mediumSpeedLimit;
             reason = "MEDIUM_PEDESTRIAN_DENSITY";
         } else {
-            // Below threshold — check if we need to reset
+            // Below threshold — Normal operation, no command needed
+            // LIGNE COMMENTEE POUR LE TEST : On ne reset plus la vitesse, la voiture reste lente
+            /*
             if (lastSentSpeedLimit > 0 && lastSentSpeedLimit < normalSpeedLimit) {
                 // Was slowed down, now density cleared → reset speed
                 speedLimit = normalSpeedLimit;
                 reason = "PEDESTRIAN_DENSITY_CLEARED";
             } else {
-                // Normal operation, no command needed
+            */
                 return Collections.emptyList();
-            }
+            // }
         }
 
-        // ── Avoid duplicate commands ──
-        if (speedLimit == lastSentSpeedLimit) {
-            return Collections.emptyList();
-        }
+        // ── POUR LE TEST: on envoie à chaque évaluation (pas de déduplication) ──
+        // if (speedLimit == lastSentSpeedLimit) {
+        //     return Collections.emptyList();
+        // }
 
         lastSentSpeedLimit = speedLimit;
 

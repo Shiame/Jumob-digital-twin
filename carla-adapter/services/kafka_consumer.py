@@ -72,8 +72,10 @@ class KafkaCommandConsumer:
                 cmd_type = command.get("commandType", "UNKNOWN")
                 cmd_id = command.get("commandId", "?")
 
-                logger.info("📥 Command received: %s (%s) — from rule '%s'",
-                            cmd_type, cmd_id, command.get("triggeredBy", "?"))
+                # Only log every 10th command to avoid spam
+                if self._commands_received == 1 or self._commands_received % 10 == 0:
+                    logger.info("Command #%d: %s (%s) from '%s'",
+                                self._commands_received, cmd_type, cmd_id, command.get("triggeredBy", "?"))
 
                 self._dispatch(command)
 
@@ -126,12 +128,12 @@ class KafkaCommandConsumer:
 
         if not target_roads or alignment_method == "GEO_PROXIMITY":
             # ── Geo-proximity mode: apply directly to ego ──
-            logger.info(
-                "🌍 GEO-PROXIMITY SET_SPEED_LIMIT: maxSpeed=%d km/h, reason=%s, "
-                "triggeredBy=%s, pedestrianCount=%s",
-                speed, reason, triggered_by,
-                command.get("pedestrianCount", "?"),
-            )
+            # Log only first occurrence to avoid spam (commands arrive every 2s)
+            if self._commands_received <= 1:
+                logger.info(
+                    "GEO-PROXIMITY SET_SPEED_LIMIT: maxSpeed=%d km/h, reason=%s, peds=%s",
+                    speed, reason, command.get("pedestrianCount", "?"),
+                )
             self._connector.set_speed_limit_ego(speed_kmh=speed, reason=reason)
 
         else:
