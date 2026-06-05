@@ -38,39 +38,56 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
 
-# carla-adapter:
-#   build: ./carla-adapter
-#   container_name: carla-adapter
-#   depends_on:
-#     - kafka
-#   ports:
-#     - 8084:8084
-#   environment:
-#     MOCK_MODE: "true"
-#     KAFKA_BROKER: kafka:29092
-#     KAFKA_TOPIC: carla-state
-#     CARLA_HOST: "127.0.0.1"
-#     CARLA_PORT: 2000
-#     API_HOST: "0.0.0.0"
-#     API_PORT: 8084
-
-# orchestrator-service:
-#   build: ./orchestrator-service
-#   container_name: orchestrator-service
-#   depends_on:
-#     - kafka
-#   ports:
-#     - 8085:8080
-#   environment:
-#     SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-#     SERVER_PORT: 8080
-
-  dashboard-service:
-    build: ./dashboard-service
-    container_name: dashboard-service
+  carla-adapter:
+    build: ./carla-adapter
+    container_name: carla-adapter
     depends_on:
       - kafka
     ports:
-      - 8085:8085
+      - 8084:8084
     environment:
+      MOCK_MODE: "false"
       KAFKA_BROKER: kafka:29092
+      KAFKA_TOPIC: carla-state
+      CARLA_HOST: "host.docker.internal"
+      CARLA_PORT: 2000
+      API_HOST: "0.0.0.0"
+      API_PORT: 8084
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  orchestrator-service:
+    build: ./orchestrator-service
+    container_name: orchestrator-service
+    depends_on:
+      - kafka
+    ports:
+      - 8086:8080
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVER_PORT: 8080
+
+  gama-adapter:
+    build: ./gama-adapter
+    container_name: gama-adapter
+    depends_on:
+      - kafka
+    ports:
+      - 8082:8082
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SERVER_PORT: 8082
+      GAMA_SERVER_URL: ws://host.docker.internal:6868
+      GAMA_MODEL_PATH: "/home/chaymae/gama-simulation05052025/gama-simulation/models/mobilitySimulator/Launcher.gaml"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+#  dashboard-service:
+#    build: ./dashboard-service
+#    container_name: dashboard-service
+#    depends_on:
+#      - kafka
+#    ports:
+#      - 8085:8085
+#    environment:
+#      KAFKA_BROKER: kafka:29092

@@ -196,9 +196,25 @@ class CarlaConnectorService(BaseCarlaConnector):
 
         severity = "low" if intensity < 100 else ("high" if intensity > 500 else "medium")
 
+        # 🎯 DIGITAL TWIN ALIGNMENT OFFSET 🎯
+        # We apply the EXACT same geographic offset logic here as we did for vehicles/pedestrians!
+        # This guarantees generalization to any collision on the map.
+        from config import settings
+        lat = 0.0
+        lon = 0.0
+        if self._map is not None:
+            try:
+                geo = self._map.transform_to_geolocation(loc)
+                lat = round(abs(geo.latitude) + settings.GAMA_VIS_LAT_OFFSET, 8)
+                lon = round(abs(geo.longitude) + settings.GAMA_VIS_LON_OFFSET, 8)
+            except Exception as e:
+                logger.warning("Failed to map collision geo: %s", e)
+
         collision = CollisionEvent(
             type="COLLISION",
             position={"x": round(loc.x, 2), "y": round(loc.y, 2)},
+            latitude=lat,
+            longitude=lon,
             otherActorType=other.type_id if other else "unknown",
             severity=severity,
         )

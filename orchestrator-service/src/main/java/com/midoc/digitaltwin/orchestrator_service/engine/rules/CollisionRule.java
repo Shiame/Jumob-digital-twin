@@ -28,7 +28,7 @@ import java.util.Set;
  *   4. Orchestrateur envoie BLOCK_ROAD sur gama-commands
  *   5. GAMA reroute piétons, bus, vélos autour de la route bloquée
  */
-//@Component
+@Component
 public class CollisionRule implements CoSimRule {
 
     private static final Logger logger = LoggerFactory.getLogger(CollisionRule.class);
@@ -115,12 +115,18 @@ public class CollisionRule implements CoSimRule {
      */
     private String mapPositionToRoadId(CarlaEvent.Position position) {
         if (position == null) {
-            return "road_unknown";
+            // Default to roundabout center if position is missing
+            return "1.45950994,43.55287609";
         }
 
-        // Simple grid mapping (placeholder)
-        int gridX = (int) (position.getX() / 50.0);
-        int gridY = (int) (position.getY() / 50.0);
-        return String.format("road_%d_%d", Math.abs(gridX), Math.abs(gridY));
+        // 🎯 DIGITAL TWIN ALIGNMENT 🎯
+        // CARLA now computes the exact geographic coordinate of the collision and sends it.
+        // We simply forward this exactly to GAMA so it can geometrically find the correct road.
+        if (position.getLatitude() != null && position.getLongitude() != null) {
+            return position.getLongitude() + "," + position.getLatitude();
+        }
+
+        // Fallback if the sensor failed to compute GPS
+        return "1.45950994,43.55287609";
     }
 }

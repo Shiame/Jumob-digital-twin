@@ -48,6 +48,8 @@ class CollisionEvent(BaseModel):
 
     type: str = Field(default="COLLISION", description="Event type")
     position: dict = Field(default_factory=lambda: {"x": 0.0, "y": 0.0}, description="Collision position")
+    latitude: float = Field(default=0.0, description="GPS latitude (WGS84)")
+    longitude: float = Field(default=0.0, description="GPS longitude (WGS84)")
     otherActorType: str = Field(default="unknown", description="Type of other actor involved")
     severity: str = Field(default="medium", description="Collision severity (low/medium/high)")
 

@@ -22,5 +22,7 @@ public class CarlaEvent {
     public static class Position {
         private double x;
         private double y;
+        private Double latitude;
+        private Double longitude;
     }
 }

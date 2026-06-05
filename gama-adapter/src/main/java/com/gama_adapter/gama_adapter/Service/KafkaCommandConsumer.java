@@ -65,11 +65,34 @@ public class KafkaCommandConsumer {
 
         logger.warn("🚧 BLOCK_ROAD: road '{}' → blocked={}", roadId, blocked);
 
-        // Send command to GAMA via WebSocket
+        String expId = gamaWebSocket.getExperimentId();
+        if (expId == null) {
+            logger.error("Cannot send block command to GAMA: experiment ID is null (simulation not running?)");
+            return;
+        }
+
+        // We use GAMA Server's native "expression" evaluation to modify the road's maxspeed.
+        // We use 0.1 instead of 0.0 to avoid division by zero (IllegalArgumentException) in GAMA's advanced_driving skill.
+        float newSpeed = blocked ? 0.1f : 50.0f; // 0.1 = blocked (very slow), 50 = unblocked
+        
+        // The roadId is now expected to be a GPS coordinate string: "longitude,latitude"
+        String[] coords = roadId.split(",");
+        String lon = coords.length > 1 ? coords[0] : "1.45950994";
+        String lat = coords.length > 1 ? coords[1] : "43.55287609";
+        // The user gave us the exact GPS coordinates (e.g. of the roundabout center).
+        // Instead of blocking just one tiny segment, we block all segments within a 25-meter radius
+        // We now directly assign the list of osmRoad agents to the variable, avoiding any string ID bugs!
+        String expr = blocked ? 
+            String.format("BLOCKED_ROADS <- osmRoad where (each distance_to (point(to_GAMA_CRS({%s, %s}, 'EPSG:4326'))) < 25.0);", lon, lat) : 
+            "BLOCKED_ROADS <- [];";
+
+
         String gamaCmd = String.format(
-            "{\"type\":\"command\",\"action\":\"block_road\",\"road_id\":\"%s\",\"blocked\":%s}",
-            roadId, blocked
+            "{\"type\":\"expression\",\"exp_id\":\"%s\",\"expr\":\"%s\"}",
+            expId, expr
         );
+        
+        logger.info("Executing GAML expression: {}", expr);
         gamaWebSocket.sendCommand(gamaCmd);
     }
 
