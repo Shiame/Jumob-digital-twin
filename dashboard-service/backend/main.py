@@ -116,8 +116,12 @@ frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"
 if os.path.exists(frontend_dist):
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
 
-    @app.get("/")
-    def serve_react_app():
+    from fastapi import HTTPException
+
+    @app.get("/{catchall:path}")
+    def serve_react_app(catchall: str):
+        if catchall.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
         return FileResponse(os.path.join(frontend_dist, "index.html"))
 else:
     logger.warning(f"Frontend dist folder not found at {frontend_dist}. Please run 'npm run build' in the frontend directory.")
