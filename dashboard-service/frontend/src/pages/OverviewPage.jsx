@@ -4,7 +4,7 @@ import ScenarioPanel from '../components/ScenarioPanel';
 
 export default function OverviewPage({
   gamaState, carlaState, egoVehicle, lastCommand,
-  commands, throughput, connected, demoMode, events,
+  commands, throughput, connected, demoMode, events, isDarkMode,
 }) {
   const egoSpeed = egoVehicle?.speed_kmh ?? 0;
   const isSlowdown = lastCommand?.commandType === 'SET_SPEED_LIMIT' && egoSpeed <= (lastCommand.maxSpeedKmh || 999) * 1.5;
@@ -34,12 +34,6 @@ export default function OverviewPage({
           <div className="meta-item">
             <span>Tick CARLA</span>
             <span className="meta-value">{carlaState.tickNumber}</span>
-          </div>
-          <div className="meta-item">
-            <span>Mode</span>
-            <span className="meta-value" style={{ color: demoMode ? 'var(--amber)' : 'var(--green)' }}>
-              {demoMode ? 'DEMO' : 'LIVE'}
-            </span>
           </div>
         </div>
       </div>
@@ -94,8 +88,8 @@ export default function OverviewPage({
                 {connected || demoMode ? 'OPÉRATIONNEL' : 'DÉCONNECTÉ'}
               </span>
             </div>
-            <div className="card-body">
-              <TopologyDiagram throughput={throughput} connected={connected || demoMode} />
+            <div className="card-body" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TopologyDiagram throughput={throughput} connected={connected || demoMode} isDarkMode={isDarkMode} />
             </div>
           </div>
 
@@ -112,7 +106,7 @@ export default function OverviewPage({
               </span>
             </div>
             <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <ScenarioPanel commands={commands} lastCommand={lastCommand} events={events} />
+              <ScenarioPanel commands={commands} lastCommand={lastCommand} events={events} demoMode={demoMode} />
             </div>
           </div>
         </div>

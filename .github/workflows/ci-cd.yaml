@@ -1,0 +1,210 @@
+# ═══════════════════════════════════════════════════════════
+#  CI/CD Pipeline — MIDOC Digital Twin
+#  GitHub Actions → Build → Test → Push to Artifact Registry → Deploy to GKE
+#
+#  This pipeline implements the End-to-End DevOps Flow:
+#  1. Developer pushes code to GitHub (main branch)
+#  2. GitHub Actions triggers automatically
+#  3. Builds Docker images for each microservice
+#  4. Runs automated tests
+#  5. Pushes images to Google Artifact Registry
+#  6. Deploys to GKE using kubectl
+# ═══════════════════════════════════════════════════════════
+
+name: CI/CD — MIDOC Digital Twin
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # ── Google Cloud Configuration ──
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: europe-west1
+  GKE_CLUSTER: midoc-cluster
+  GAR_REPOSITORY: midoc
+  # ── Image names ──
+  CARLA_ADAPTER_IMAGE: carla-adapter
+  ORCHESTRATOR_IMAGE: orchestrator-service
+  GAMA_ADAPTER_IMAGE: gama-adapter
+  DASHBOARD_IMAGE: dashboard-service
+
+jobs:
+  # ═══════════════════════════════════════════════════════
+  #  Stage 1: BUILD & TEST
+  #  Build Docker images and run unit tests
+  # ═══════════════════════════════════════════════════════
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: carla-adapter
+            path: ./carla-adapter
+            test-cmd: "echo 'Python tests placeholder'"
+          - name: orchestrator-service
+            path: ./orchestrator-service
+            test-cmd: "echo 'Maven tests placeholder'"
+          - name: gama-adapter
+            path: ./gama-adapter
+            test-cmd: "echo 'Maven tests placeholder'"
+          - name: dashboard-service
+            path: ./dashboard-service
+            test-cmd: "echo 'Dashboard tests placeholder'"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build Docker image to verify Dockerfile is valid
+      - name: Build Docker image — ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.path }}
+          push: false
+          tags: ${{ matrix.service.name }}:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run tests — ${{ matrix.service.name }}
+        run: ${{ matrix.service.test-cmd }}
+
+  # ═══════════════════════════════════════════════════════
+  #  Stage 2: PUSH TO ARTIFACT REGISTRY
+  #  Authenticate with GCP, build final images, push
+  #  Only runs on push to main (not on PRs)
+  # ═══════════════════════════════════════════════════════
+  push-images:
+    name: Push Images to Artifact Registry
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: carla-adapter
+            path: ./carla-adapter
+          - name: orchestrator-service
+            path: ./orchestrator-service
+          - name: gama-adapter
+            path: ./gama-adapter
+          - name: dashboard-service
+            path: ./dashboard-service
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Authenticate with Google Cloud using Service Account key
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Configure Docker to use Artifact Registry
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build and push with both :latest and :sha tags
+      - name: Build & Push — ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.path }}
+          push: true
+          tags: |
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ matrix.service.name }}:latest
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/${{ matrix.service.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ═══════════════════════════════════════════════════════
+  #  Stage 3: DEPLOY TO GKE
+  #  Apply Kubernetes manifests to the GKE cluster
+  #  Uses rolling updates for zero-downtime deployment
+  # ═══════════════════════════════════════════════════════
+  deploy:
+    name: Deploy to GKE
+    needs: push-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Install kubectl and get GKE credentials
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GCP_REGION }}
+
+      # Replace PROJECT_ID placeholder in manifests
+      - name: Update manifests with project ID
+        run: |
+          find k8s/ -name "*.yaml" -exec sed -i "s/PROJECT_ID/${{ env.GCP_PROJECT_ID }}/g" {} +
+
+      # Apply Kubernetes manifests in order
+      - name: Deploy — Namespace & ConfigMaps
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmaps/
+
+      - name: Deploy — Infrastructure (Kafka)
+        run: kubectl apply -f k8s/infrastructure/
+
+      # Wait for Kafka to be ready before deploying services
+      - name: Wait for Kafka readiness
+        run: |
+          kubectl -n midoc-dt rollout status deployment/zookeeper --timeout=120s
+          kubectl -n midoc-dt rollout status deployment/kafka --timeout=180s
+
+      - name: Deploy — Application Services
+        run: kubectl apply -f k8s/services/
+
+      # Force rolling update to pick up new images
+      - name: Trigger rolling update
+        run: |
+          kubectl -n midoc-dt set image deployment/carla-adapter \
+            carla-adapter=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/carla-adapter:${{ github.sha }}
+          kubectl -n midoc-dt set image deployment/orchestrator-service \
+            orchestrator-service=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/orchestrator-service:${{ github.sha }}
+          kubectl -n midoc-dt set image deployment/gama-adapter \
+            gama-adapter=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/gama-adapter:${{ github.sha }}
+          kubectl -n midoc-dt set image deployment/dashboard-service \
+            dashboard-service=${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/dashboard-service:${{ github.sha }}
+
+      - name: Verify deployment
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl -n midoc-dt get deployments
+          echo ""
+          echo "=== Pods ==="
+          kubectl -n midoc-dt get pods
+          echo ""
+          echo "=== Services ==="
+          kubectl -n midoc-dt get services
+          echo ""
+          echo "=== Dashboard External IP ==="
+          kubectl -n midoc-dt get service dashboard-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+          echo ""

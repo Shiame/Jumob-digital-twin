@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
 
-const MAX_POINTS = 60;
+const MAX_POINTS = 40;
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-      borderRadius: 6, padding: '8px 12px', fontSize: 11,
-      fontFamily: 'var(--font-mono)',
+      background: '#313b50', border: '1px solid rgba(203,213,225,0.15)',
+      borderRadius: 8, padding: '8px 14px', fontSize: 11,
+      fontFamily: 'var(--font-mono)', boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
     }}>
-      <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+      <div style={{ color: '#6b7d94', marginBottom: 4 }}>{label}</div>
       {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color, display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+        <div key={i} style={{ color: p.color, display: 'flex', gap: 12, justifyContent: 'space-between' }}>
           <span>{p.name}</span>
           <span style={{ fontWeight: 600 }}>{typeof p.value === 'number' ? p.value.toFixed(1) : p.value}</span>
         </div>
@@ -25,6 +25,12 @@ const CustomTooltip = ({ active, payload, label }) => {
     </div>
   );
 };
+
+/** Show only HH:MM on axes, not seconds */
+function shortTime() {
+  const d = new Date();
+  return d.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
 
 export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, commands, throughput }) {
   const [speedHistory, setSpeedHistory] = useState([]);
@@ -41,7 +47,6 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
     return roads.reduce((s, r) => s + (r.congestionLevel || 0), 0) / roads.length;
   }, [gamaState.roads]);
 
-  // Active speed limit from commands
   const activeSpeedLimit = useMemo(() => {
     const latest = commands.find(c => c.commandType === 'SET_SPEED_LIMIT');
     return latest?.maxSpeedKmh ?? null;
@@ -49,7 +54,7 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
 
   useEffect(() => {
     tickRef.current++;
-    const timeLabel = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timeLabel = shortTime();
 
     setSpeedHistory(prev => [
       ...prev.slice(-(MAX_POINTS - 1)),
@@ -88,9 +93,9 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
         </div>
       </div>
 
-      <div className="page-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div className="page-body" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
         {/* Row 1: Speed + Pedestrians */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
           {/* Speed Chart */}
           <div className="card">
             <div className="card-header">
@@ -113,27 +118,27 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={speedHistory}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
-                    <YAxis domain={[0, 60]} tick={{ fontSize: 9 }} />
+                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval={Math.max(Math.floor(speedHistory.length / 5), 1)} />
+                    <YAxis domain={[0, 60]} tick={{ fontSize: 9 }} width={35} />
                     <Tooltip content={<CustomTooltip />} />
                     <defs>
                       <linearGradient id="speedGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#34d399" stopOpacity={0.25} />
+                        <stop offset="100%" stopColor="#34d399" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <Area
                       type="monotone" dataKey="speed" name="Vitesse"
-                      stroke="#22c55e" fill="url(#speedGrad)" strokeWidth={2}
+                      stroke="#34d399" fill="url(#speedGrad)" strokeWidth={2}
                       dot={false} isAnimationActive={false}
                     />
                     {activeSpeedLimit && (
                       <ReferenceLine
                         y={activeSpeedLimit}
-                        stroke="#f59e0b"
-                        strokeDasharray="4 4"
+                        stroke="#fbbf24"
+                        strokeDasharray="6 3"
                         strokeWidth={1.5}
-                        label={{ value: `Limite ${activeSpeedLimit}`, position: 'right', fill: '#f59e0b', fontSize: 10 }}
+                        label={{ value: `Limite ${activeSpeedLimit}`, position: 'right', fill: '#fbbf24', fontSize: 10 }}
                       />
                     )}
                   </AreaChart>
@@ -163,18 +168,18 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={pedestrianHistory}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
-                    <YAxis tick={{ fontSize: 9 }} />
+                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval={Math.max(Math.floor(pedestrianHistory.length / 5), 1)} />
+                    <YAxis tick={{ fontSize: 9 }} width={35} />
                     <Tooltip content={<CustomTooltip />} />
                     <defs>
                       <linearGradient id="pedGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#2d7ff9" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#2d7ff9" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.25} />
+                        <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <Area
                       type="monotone" dataKey="count" name="Piétons"
-                      stroke="#2d7ff9" fill="url(#pedGrad)" strokeWidth={2}
+                      stroke="#60a5fa" fill="url(#pedGrad)" strokeWidth={2}
                       dot={false} isAnimationActive={false}
                     />
                   </AreaChart>
@@ -185,7 +190,7 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
         </div>
 
         {/* Row 2: Congestion + Throughput */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
           {/* Congestion */}
           <div className="card">
             <div className="card-header">
@@ -207,21 +212,21 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={congestionHistory}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 9 }} unit="%" />
+                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval={Math.max(Math.floor(congestionHistory.length / 5), 1)} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 9 }} unit="%" width={40} />
                     <Tooltip content={<CustomTooltip />} />
                     <defs>
                       <linearGradient id="congGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.25} />
+                        <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <Area
                       type="monotone" dataKey="congestion" name="Congestion"
-                      stroke="#f59e0b" fill="url(#congGrad)" strokeWidth={2}
+                      stroke="#fbbf24" fill="url(#congGrad)" strokeWidth={2}
                       dot={false} isAnimationActive={false}
                     />
-                    <ReferenceLine y={50} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1} />
+                    <ReferenceLine y={50} stroke="#f87171" strokeDasharray="6 3" strokeWidth={1} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -245,13 +250,13 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
             <div className="card-body">
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={throughputHistory}>
+                  <BarChart data={throughputHistory} barGap={1}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval="preserveStartEnd" />
-                    <YAxis tick={{ fontSize: 9 }} />
+                    <XAxis dataKey="time" tick={{ fontSize: 9 }} interval={Math.max(Math.floor(throughputHistory.length / 5), 1)} />
+                    <YAxis tick={{ fontSize: 9 }} width={30} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="gama" name="GAMA" fill="#2d7ff9" opacity={0.7} radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="carla" name="CARLA" fill="#22c55e" opacity={0.7} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="gama" name="GAMA" fill="#60a5fa" opacity={0.75} radius={[3, 3, 0, 0]} maxBarSize={12} />
+                    <Bar dataKey="carla" name="CARLA" fill="#34d399" opacity={0.75} radius={[3, 3, 0, 0]} maxBarSize={12} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -268,9 +273,6 @@ export default function AnalyticsPage({ gamaState, carlaState, egoVehicle, comma
                 <line x1="4" y1="22" x2="4" y2="15" />
               </svg>
               Segments routiers GAMA
-            </span>
-            <span className="card-badge" style={{ background: 'var(--purple-dim)', color: 'var(--purple)' }}>
-              {gamaState.roads?.length || 0} segments
             </span>
           </div>
           <div className="card-body" style={{ overflowX: 'auto' }}>
@@ -315,7 +317,7 @@ function CongestionBar({ value }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div style={{
-        width: 60, height: 6, background: 'var(--bg-primary)',
+        width: 60, height: 6, background: 'rgba(203,213,225,0.06)',
         borderRadius: 3, overflow: 'hidden',
       }}>
         <div style={{
@@ -329,11 +331,11 @@ function CongestionBar({ value }) {
 }
 
 const thStyle = {
-  textAlign: 'left', padding: '8px 12px',
+  textAlign: 'left', padding: '10px 12px',
   fontSize: 10, fontWeight: 600, color: 'var(--text-muted)',
   textTransform: 'uppercase', letterSpacing: '0.05em',
 };
 
 const tdStyle = {
-  padding: '8px 12px', color: 'var(--text-secondary)',
+  padding: '10px 12px', color: 'var(--text-secondary)',
 };

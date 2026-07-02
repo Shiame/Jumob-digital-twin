@@ -1,0 +1,11 @@
+# ═══════════════════════════════════════════════════════════
+#  Namespace — MIDOC Digital Twin
+#  All resources are isolated in this namespace
+# ═══════════════════════════════════════════════════════════
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: midoc-dt
+  labels:
+    app.kubernetes.io/part-of: midoc-digital-twin
+    app.kubernetes.io/managed-by: kubectl

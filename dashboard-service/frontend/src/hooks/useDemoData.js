@@ -64,6 +64,7 @@ export function useDemoData(active, processEvent, addEvent) {
   const tickRef = useRef(0);
   const scenarioTimer = useRef(0);
   const lastCollisionTime = useRef(0);
+  const blockedRoad = useRef(null);
 
   // Initialize agents once
   if (!agents.current) {
@@ -109,7 +110,11 @@ export function useDemoData(active, processEvent, addEvent) {
       });
     });
 
-    const pedestrianAgents = allAgents.filter(a => a.type === 'pedestrian');
+    const allPedestrians = allAgents.filter(a => a.type === 'pedestrian');
+    // Vary the number of visible pedestrians dynamically so it's not a flat line
+    const visiblePedCount = Math.floor(25 + Math.sin(t * 0.04) * 12);
+    const pedestrianAgents = allPedestrians.slice(0, visiblePedCount);
+
     const vehicleAgents = allAgents.filter(a => a.type !== 'pedestrian');
 
     // ── Move ego vehicle ──
@@ -144,9 +149,9 @@ export function useDemoData(active, processEvent, addEvent) {
         vehicles: vehicleAgents,
         roads: ROAD_SEGMENTS.map(r => ({
           roadId: r.id,
-          congestionLevel: 0.2 + Math.sin(t * 0.01 + parseInt(r.id)) * 0.3,
-          speedCoeff: 0.8 + Math.random() * 0.2,
-          blocked: false,
+          congestionLevel: (blockedRoad.current === r.id) ? 0.95 : 0.2 + Math.sin(t * 0.01 + parseInt(r.id)) * 0.3,
+          speedCoeff: (blockedRoad.current === r.id) ? 0 : 0.8 + Math.random() * 0.2,
+          blocked: blockedRoad.current === r.id,
           movingAgents: {},
         })),
         zones: [
@@ -158,15 +163,28 @@ export function useDemoData(active, processEvent, addEvent) {
 
     // ── Emit CARLA state ──
     const carlaEvents = [];
-    // Simulate collision every ~120s
-    if (t - lastCollisionTime.current > 240 && Math.random() < 0.02) {
+    if (scenarioTimer.current === 10) {
       carlaEvents.push({
         type: 'COLLISION',
         position: { x: ego.lon * 100, y: ego.lat * 100, latitude: ego.lat, longitude: ego.lon },
-        otherActorType: Math.random() > 0.5 ? 'pedestrian' : 'vehicle',
-        severity: Math.random() > 0.7 ? 'high' : 'medium',
+        otherActorType: 'vehicle',
+        severity: 'high',
       });
       lastCollisionTime.current = t;
+      blockedRoad.current = '2642';
+      
+      // Simulate orchestrator reaction
+      setTimeout(() => {
+        processEvent({
+          topic: 'carla-commands',
+          payload: {
+            commandType: 'BLOCK_ROAD',
+            roadId: '2642',
+            triggeredBy: 'S2_COLLISION_BLOCK',
+            reason: 'COLLISION_DETECTED',
+          },
+        });
+      }, 500);
     }
 
     processEvent({
@@ -200,6 +218,13 @@ export function useDemoData(active, processEvent, addEvent) {
       },
     });
 
+    // Emulate network jitter for Kafka throughput chart
+    const jitter = Math.floor(Math.random() * 6);
+    for (let i = 0; i < jitter; i++) {
+      // Just increment the counter in useWebSocket without changing state
+      processEvent({ topic: 'gama-state', payload: { _dummy: true } });
+    }
+
     // ── Trigger S1 scenario periodically ──
     if (scenarioTimer.current === 60) {
       processEvent({
@@ -221,12 +246,15 @@ export function useDemoData(active, processEvent, addEvent) {
     if (scenarioTimer.current >= 100) {
       scenarioTimer.current = 0;
     }
+    
+    // Unblock road after a while
+    if (t - lastCollisionTime.current > 40 && blockedRoad.current) {
+      blockedRoad.current = null;
+    }
   }, [processEvent]);
 
   useEffect(() => {
     if (!active) return;
-
-    addEvent('SYSTEM', 'Mode DEMO activé — données simulées', 'info');
 
     const interval = setInterval(tick, 500); // 2 Hz for demo
     return () => clearInterval(interval);

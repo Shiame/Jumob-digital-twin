@@ -1,0 +1,17 @@
+# ═══════════════════════════════════════════════════════════
+#  ConfigMap — Shared Kafka Configuration
+#  Centralized config so all services reference the same broker
+# ═══════════════════════════════════════════════════════════
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: midoc-dt
+  labels:
+    app.kubernetes.io/part-of: midoc-digital-twin
+    app.kubernetes.io/component: configuration
+data:
+  # Internal broker address (K8s DNS)
+  KAFKA_BROKER: "kafka.midoc-dt.svc.cluster.local:29092"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.midoc-dt.svc.cluster.local:29092"
+  ZOOKEEPER_CONNECT: "zookeeper.midoc-dt.svc.cluster.local:2181"

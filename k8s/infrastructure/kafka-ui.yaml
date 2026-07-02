@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════
+#  Kafka UI — Web-based Kafka Monitoring
+#  Accessible externally via LoadBalancer for debugging
+# ═══════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: midoc-dt
+  labels:
+    app: kafka-ui
+    app.kubernetes.io/part-of: midoc-digital-twin
+    app.kubernetes.io/component: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+        app.kubernetes.io/part-of: midoc-digital-twin
+    spec:
+      # Wait for Kafka to be ready
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Kafka at kafka:29092..."
+              until nc -z kafka.midoc-dt.svc.cluster.local 29092; do
+                echo "Kafka not ready, retrying in 3s..."
+                sleep 3
+              done
+              echo "Kafka is ready!"
+      containers:
+        - name: kafka-ui
+          image: provectuslabs/kafka-ui:latest
+          ports:
+            - containerPort: 8080
+              name: web
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: "midoc-digital-twin"
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: KAFKA_BROKER
+            - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: ZOOKEEPER_CONNECT
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+  namespace: midoc-dt
+  labels:
+    app: kafka-ui
+spec:
+  type: ClusterIP
+  selector:
+    app: kafka-ui
+  ports:
+    - name: web
+      port: 8080
+      targetPort: 8080

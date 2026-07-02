@@ -31,14 +31,35 @@ def diagnostic(host, port):
                     target = v
                     break
             
+            if not target:
+                print(" Pas d'autre véhicule trouvé. Création d'une cible (Dummy) juste devant le Hero...")
+                bp_lib = world.get_blueprint_library()
+                dummy_bp = bp_lib.filter('vehicle.audi.tt')[0]
+                
+                # Placer la cible 10 mètres devant le hero
+                hero_transform = hero.get_transform()
+                forward_vector = hero_transform.get_forward_vector()
+                
+                dummy_transform = carla.Transform(
+                    hero_transform.location + carla.Location(x=forward_vector.x*10, y=forward_vector.y*10, z=0),
+                    hero_transform.rotation
+                )
+                
+                target = world.try_spawn_actor(dummy_bp, dummy_transform)
+                if target:
+                    print(f" Cible Dummy spawnée ! (ID: {target.id})")
+                else:
+                    print(" Impossible de spawner la cible Dummy. Téléportation du Hero dans le sol pour forcer le crash...")
+                    hero_transform.location.z -= 2.0
+                    hero.set_transform(hero_transform)
+            
             if target:
-                print(f"Provocation d'une collision avec {target.type_id}...")
+                print(f"💥 Provocation d'une collision avec {target.type_id}...")
+                # On téléporte le hero EXACTEMENT sur la cible
                 hero.set_transform(target.get_transform())
-                print("Téléportation réussie !")
-            else:
-                print(" Pas d'autre véhicule pour la collision.")
+                print("Téléportation réussie ! REGARDEZ LES LOGS GAMA ET DOCKER !")
         else:
-            print(" HERO non trouvé sur ce port.")
+            print(" HERO non trouvé. Veuillez lancer spawn_hero_vehicle.py d'abord.")
             
     except Exception as e:
         print(f"Erreur sur le port {port}: {e}")

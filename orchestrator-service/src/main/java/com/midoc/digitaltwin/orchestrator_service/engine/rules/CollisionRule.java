@@ -9,11 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Scénario 2 — Collision du véhicule autonome → Fermeture de route dans GAMA
@@ -21,20 +18,23 @@ import java.util.Set;
  * SI CARLA détecte une collision (capteurs physiques)
  * ALORS GAMA ferme le segment de route et reroute ses agents.
  *
- * Flow:
- *   1. CARLA détecte la collision via capteur
- *   2. carla-adapter publie COLLISION_EVENT sur carla-state
- *   3. Orchestrateur mappe la position vers un roadId GAMA
- *   4. Orchestrateur envoie BLOCK_ROAD sur gama-commands
- *   5. GAMA reroute piétons, bus, vélos autour de la route bloquée
+ * IMPORTANT: Uses a 60-second cooldown to avoid flooding GAMA with
+ * hundreds of duplicate BLOCK_ROAD commands (the collision sensor fires
+ * continuously while the two vehicles are overlapping).
  */
 @Component
 public class CollisionRule implements CoSimRule {
 
     private static final Logger logger = LoggerFactory.getLogger(CollisionRule.class);
 
-    /** Track collision event IDs we've already processed to avoid duplicate commands */
-    private final Set<String> processedCollisions = new HashSet<>();
+    /** Cooldown period in milliseconds — ignore collisions for 60s after the first one */
+    private static final long COOLDOWN_MS = 60_000;
+
+    /** Timestamp of the last collision we processed */
+    private volatile long lastCollisionTimestamp = 0;
+
+    /** Whether we already sent the STOP command to CARLA for this collision */
+    private volatile boolean carlaStopSent = false;
 
     @Override
     public String getName() {
@@ -43,7 +43,36 @@ public class CollisionRule implements CoSimRule {
 
     @Override
     public List<CarlaCommand> evaluateForCarla(GamaStateEvent gamaState, CarlaStateEvent carlaState) {
-        // This scenario only produces GAMA commands
+        if (carlaState == null || carlaState.getPayload() == null) {
+            return Collections.emptyList();
+        }
+
+        // If we already sent STOP for this collision, don't send again
+        if (carlaStopSent && !isCooldownExpired()) {
+            return Collections.emptyList();
+        }
+
+        List<CarlaEvent> events = carlaState.getPayload().getEvents();
+        if (events == null || events.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        for (CarlaEvent event : events) {
+            if ("COLLISION".equalsIgnoreCase(event.getType())) {
+                carlaStopSent = true;
+
+                CarlaCommand cmd = CarlaCommand.builder()
+                        .commandType("SET_SPEED_LIMIT")
+                        .maxSpeedKmh(0)
+                        .reason("ACCIDENT DETECTED! Stopping vehicle.")
+                        .triggeredBy(getName())
+                        .build();
+
+                logger.warn("🚨 [{}] Sending STOP command to CARLA vehicle!", getName());
+                return Collections.singletonList(cmd);
+            }
+        }
+
         return Collections.emptyList();
     }
 
@@ -53,80 +82,48 @@ public class CollisionRule implements CoSimRule {
             return Collections.emptyList();
         }
 
+        // COOLDOWN: If we already processed a collision recently, skip entirely
+        if (!isCooldownExpired() && lastCollisionTimestamp > 0) {
+            return Collections.emptyList();
+        }
+
         List<CarlaEvent> events = carlaState.getPayload().getEvents();
         if (events == null || events.isEmpty()) {
             return Collections.emptyList();
         }
 
-        List<GamaCommand> commands = new ArrayList<>();
-
         for (CarlaEvent event : events) {
-            if (!"COLLISION".equalsIgnoreCase(event.getType())) {
-                continue;
+            if ("COLLISION".equalsIgnoreCase(event.getType())) {
+                // Mark the time — no more commands for 60 seconds
+                lastCollisionTimestamp = System.currentTimeMillis();
+                carlaStopSent = false; // reset for CARLA side too
+
+                String roadId = "1.45950994,43.55287609";
+
+                logger.error("🚨 [{}] COLLISION detected at ({}, {}) — severity: {} — blocking road '{}' — COOLDOWN 60s ACTIVATED",
+                        getName(),
+                        event.getPosition() != null ? event.getPosition().getX() : "?",
+                        event.getPosition() != null ? event.getPosition().getY() : "?",
+                        event.getSeverity(),
+                        roadId);
+
+                GamaCommand cmd = GamaCommand.builder()
+                        .commandType("BLOCK_ROAD")
+                        .roadId(roadId)
+                        .blocked(true)
+                        .triggeredBy(getName())
+                        .build();
+
+                // Return ONLY ONE command, then cooldown blocks everything else
+                return Collections.singletonList(cmd);
             }
-
-            // Create a unique key for this collision to avoid duplicates
-            String collisionKey = String.format("%.0f_%.0f_%s",
-                    event.getPosition() != null ? event.getPosition().getX() : 0,
-                    event.getPosition() != null ? event.getPosition().getY() : 0,
-                    carlaState.getEventId());
-
-            if (processedCollisions.contains(collisionKey)) {
-                continue;
-            }
-            processedCollisions.add(collisionKey);
-
-            // Map CARLA position to a GAMA roadId
-            // For now, we use a simple mapping based on position quadrants
-            // In production, this would use a proper coordinate mapping service
-            String roadId = mapPositionToRoadId(event.getPosition());
-
-            GamaCommand cmd = GamaCommand.builder()
-                    .commandType("BLOCK_ROAD")
-                    .roadId(roadId)
-                    .blocked(true)
-                    .triggeredBy(getName())
-                    .build();
-
-            commands.add(cmd);
-
-            logger.error("🚨 [{}] COLLISION detected at ({}, {}) — severity: {} — blocking road '{}'",
-                    getName(),
-                    event.getPosition() != null ? event.getPosition().getX() : "?",
-                    event.getPosition() != null ? event.getPosition().getY() : "?",
-                    event.getSeverity(),
-                    roadId);
         }
 
-        // Limit memory: keep only the last 1000 processed collisions
-        if (processedCollisions.size() > 1000) {
-            processedCollisions.clear();
-        }
-
-        return commands;
+        return Collections.emptyList();
     }
 
-    /**
-     * Maps a CARLA world position to a GAMA road ID.
-     *
-     * TODO: Replace with a proper coordinate mapping service that uses
-     * a shared road network graph between GAMA and CARLA.
-     * For now, uses a simple grid-based mapping.
-     */
-    private String mapPositionToRoadId(CarlaEvent.Position position) {
-        if (position == null) {
-            // Default to roundabout center if position is missing
-            return "1.45950994,43.55287609";
-        }
-
-        // 🎯 DIGITAL TWIN ALIGNMENT 🎯
-        // CARLA now computes the exact geographic coordinate of the collision and sends it.
-        // We simply forward this exactly to GAMA so it can geometrically find the correct road.
-        if (position.getLatitude() != null && position.getLongitude() != null) {
-            return position.getLongitude() + "," + position.getLatitude();
-        }
-
-        // Fallback if the sensor failed to compute GPS
-        return "1.45950994,43.55287609";
+    /** Check if the cooldown period has expired */
+    private boolean isCooldownExpired() {
+        return System.currentTimeMillis() - lastCollisionTimestamp > COOLDOWN_MS;
     }
 }

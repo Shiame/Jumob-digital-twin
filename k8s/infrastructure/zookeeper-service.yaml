@@ -1,0 +1,20 @@
+# ═══════════════════════════════════════════════════════════
+#  Zookeeper — ClusterIP Service
+#  Internal-only: accessible at zookeeper.midoc-dt.svc.cluster.local
+# ═══════════════════════════════════════════════════════════
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: midoc-dt
+  labels:
+    app: zookeeper
+    app.kubernetes.io/part-of: midoc-digital-twin
+spec:
+  type: ClusterIP
+  selector:
+    app: zookeeper
+  ports:
+    - name: client
+      port: 2181
+      targetPort: 2181

@@ -2,7 +2,7 @@
 # ===========================
 
 # CARLA Python API (only needed in real mode, installed separately on OcciData)
-# carla==0.9.15
+carla==0.9.15
 
 # Kafka
 confluent-kafka==2.6.1

@@ -158,20 +158,24 @@ class CarlaConnectorService(BaseCarlaConnector):
         # Priority: vehicle with role_name='hero'
         for actor in actors:
             if actor.attributes.get("role_name") == "hero":
-                self._ego_vehicle = actor
-                logger.info("✅ Found ego vehicle (hero): %s (id=%d)", actor.type_id, actor.id)
-                self._attach_collision_sensor(actor)
+                # Only re-attach if it's a different vehicle than what we currently have
+                if self._ego_vehicle is None or self._ego_vehicle.id != actor.id:
+                    self._ego_vehicle = actor
+                    logger.info("✅ Found ego vehicle (hero): %s (id=%d)", actor.type_id, actor.id)
+                    self._attach_collision_sensor(actor)
                 return
 
-        # Fallback: first vehicle found
+        # Fallback: first vehicle found (only log once, not every tick)
         if len(actors) > 0:
-            self._ego_vehicle = actors[0]
-            logger.warning("⚠️ No hero vehicle found — using first vehicle: %s (id=%d)",
-                           actors[0].type_id, actors[0].id)
-            self._attach_collision_sensor(actors[0])
+            if self._ego_vehicle is None or self._ego_vehicle.id != actors[0].id:
+                self._ego_vehicle = actors[0]
+                logger.warning("⚠️ No hero vehicle found — using first vehicle: %s (id=%d)",
+                               actors[0].type_id, actors[0].id)
+                self._attach_collision_sensor(actors[0])
             return
 
-        logger.warning("❌ No vehicles found in the world — ego vehicle not set")
+        if self._ego_vehicle is None:
+            logger.warning("❌ No vehicles found in the world — ego vehicle not set")
 
     def _attach_collision_sensor(self, vehicle):
         """Attach a collision sensor to the ego vehicle."""
@@ -236,8 +240,24 @@ class CarlaConnectorService(BaseCarlaConnector):
     def get_vehicles(self) -> List[VehicleState]:
         if not self._connected: return []
         
-        # Si on n'a pas encore trouvé le véhicule HERO, on le cherche
-        if self._ego_vehicle is None:
+        # Continuously re-check for the ego vehicle:
+        # - If we never found it (None)
+        # - If it was destroyed/re-spawned (is_alive check)
+        # - If the collision sensor is missing
+        # - If we're using a non-hero fallback vehicle (keep looking for the real hero)
+        ego_alive = False
+        is_hero = False
+        if self._ego_vehicle is not None:
+            try:
+                self._ego_vehicle.get_location()
+                ego_alive = True
+                is_hero = self._ego_vehicle.attributes.get("role_name") == "hero"
+            except Exception:
+                logger.warning("⚠️ Ego vehicle (id=%d) is no longer alive. Re-searching...", self._ego_vehicle.id)
+                self._ego_vehicle = None
+                self._collision_sensor = None
+        
+        if not ego_alive or self._collision_sensor is None or not is_hero:
             self._find_ego_vehicle()
 
         from services.data_transformer import transform_actor

@@ -1,0 +1,89 @@
+# ═══════════════════════════════════════════════════════════
+#  Dashboard Service — Deployment + LoadBalancer Service
+#  React frontend + Python backend monitoring dashboard
+#  This is the ONLY service exposed externally via LoadBalancer
+# ═══════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-service
+  namespace: midoc-dt
+  labels:
+    app: dashboard-service
+    app.kubernetes.io/part-of: midoc-digital-twin
+    app.kubernetes.io/component: frontend
+    tier: presentation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard-service
+  template:
+    metadata:
+      labels:
+        app: dashboard-service
+        app.kubernetes.io/part-of: midoc-digital-twin
+        tier: presentation
+    spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Kafka..."
+              until nc -z kafka.midoc-dt.svc.cluster.local 29092; do
+                sleep 3
+              done
+              echo "Kafka is ready!"
+      containers:
+        - name: dashboard-service
+          image: europe-west1-docker.pkg.dev/midoc-digital-twin/midoc/dashboard-service:latest
+          ports:
+            - containerPort: 8085
+              name: http
+          env:
+            - name: KAFKA_BROKER
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: KAFKA_BROKER
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8085
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8085
+            initialDelaySeconds: 20
+            periodSeconds: 30
+---
+# ── LoadBalancer: The dashboard is the user-facing service ──
+# GKE will provision a Google Cloud Load Balancer and assign
+# an external IP for accessing the dashboard from the internet
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-service
+  namespace: midoc-dt
+  labels:
+    app: dashboard-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: dashboard-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8085

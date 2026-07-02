@@ -1,16 +1,11 @@
-FROM eclipse-temurin:21-jdk-alpine as build
+FROM maven:3.9-eclipse-temurin-21-alpine as build
 WORKDIR /workspace/app
 
-RUN apk add --no-cache curl
-
-COPY mvnw .
-COPY .mvn .mvn
 COPY pom.xml .
-
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
 COPY src src
-RUN ./mvnw package -DskipTests -B
+RUN mvn package -DskipTests -B
 
 FROM eclipse-temurin:21-jre-alpine
 VOLUME /tmp

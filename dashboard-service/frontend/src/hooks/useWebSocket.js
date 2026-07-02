@@ -59,7 +59,6 @@ export function useWebSocket(demoMode) {
 
       ws.current.onopen = () => {
         setConnected(true);
-        addEvent('SYSTEM', 'Connecté au backend Mission Control', 'success');
       };
 
       ws.current.onclose = () => {
@@ -93,6 +92,8 @@ export function useWebSocket(demoMode) {
 
     if (topic === 'gama-state') {
       msgCount.current.gama++;
+      if (payload._dummy) return;
+      
       setGamaState({
         agents: payload.agents || [],
         pedestrians: payload.pedestrians || [],

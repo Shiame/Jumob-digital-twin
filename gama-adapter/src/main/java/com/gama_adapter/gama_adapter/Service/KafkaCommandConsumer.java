@@ -32,7 +32,7 @@ public class KafkaCommandConsumer {
 
     private int commandsReceived = 0;
 
-    @KafkaListener(topics = "${kafka.topic.gama-commands:gama-commands}", groupId = "gama-adapter-commands")
+    @KafkaListener(topics = "${kafka.topic.gama-commands:gama-commands}", groupId = "gama-adapter-commands-v6")
     public void consume(String message) {
         try {
             JsonNode command = objectMapper.readTree(message);
@@ -82,8 +82,11 @@ public class KafkaCommandConsumer {
         // The user gave us the exact GPS coordinates (e.g. of the roundabout center).
         // Instead of blocking just one tiny segment, we block all segments within a 25-meter radius
         // We now directly assign the list of osmRoad agents to the variable, avoiding any string ID bugs!
+        // We revert to the EXACT expression that worked last week (June 1st) in the local tests.
+        // GAMA evaluates assignments directly as expressions, and single quotes for 'EPSG:4326' are perfectly valid!
+        // Using a 15.0m radius to only block the specific road segment and not the whole neighborhood.
         String expr = blocked ? 
-            String.format("BLOCKED_ROADS <- osmRoad where (each distance_to (point(to_GAMA_CRS({%s, %s}, 'EPSG:4326'))) < 25.0);", lon, lat) : 
+            String.format("BLOCKED_ROADS <- osmRoad where (each distance_to (point(to_GAMA_CRS({%s, %s}, 'EPSG:4326'))) < 15.0);", lon, lat) : 
             "BLOCKED_ROADS <- [];";
 
 

@@ -1,0 +1,127 @@
+<mxfile host="app.diagrams.net" modified="2026-06-30" agent="MIDOC" version="24.0">
+  <diagram name="Use Case Diagram" id="usecase-diagram">
+    <mxGraphModel dx="1800" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="&lt;font style=&quot;font-size:16px&quot;&gt;&lt;b&gt;&lt;i&gt;Diagramme de cas d&#39;utilisation - Plateforme JuMob&lt;/i&gt;&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="530" y="30" width="480" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="system" value="&lt;b&gt;Plateforme de co-simulation JuMob&lt;/b&gt;" style="shape=rect;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontSize=13;fontStyle=1;spacingTop=8;rounded=1;arcSize=5;opacity=30;" vertex="1" parent="1">
+          <mxGeometry x="350" y="80" width="1050" height="960" as="geometry"/>
+        </mxCell>
+        <mxCell id="actorUser" value="Operateur" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="250" width="40" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="actorGama" value="&lt;b&gt;Simulateur&lt;br&gt;GAMA&lt;/b&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="200" width="40" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="actorCarla" value="&lt;b&gt;Simulateur&lt;br&gt;CARLA&lt;/b&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="580" width="40" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc1" value="Superviser la&#xa;co-simulation&#xa;en temps reel" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="400" y="120" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc2" value="Consulter les&#xa;evenements et alertes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="400" y="250" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc3" value="Declencher un&#xa;scenario de test" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="400" y="380" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc4" value="Collecter l etat&#xa;de la mobilite urbaine" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="120" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc5" value="Collecter l etat du&#xa;trafic vehiculaire" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="250" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc6" value="Evaluer les regles&#xa;de co-simulation&#xa;(Moteur ECA)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="500" width="210" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc7" value="Detecter&#xa;une collision" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="420" y="560" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc8" value="Detecter une densite&#xa;pietonne elevee" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="420" y="650" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc9" value="Detecter une&#xa;congestion routiere" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="420" y="740" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc10" value="Detecter un niveau&#xa;de pollution" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="420" y="830" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc11" value="Envoyer une commande&#xa;de controle a CARLA" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="500" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc12" value="Envoyer une commande&#xa;a GAMA" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="400" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc13" value="Visualiser les agents&#xa;GAMA dans la scene&#xa;3D de CARLA" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="640" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="uc14" value="Transformer et&#xa;echanger les donnees&#xa;entre simulateurs" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="700" y="290" width="210" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkUser1" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorUser" target="uc1" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkUser2" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorUser" target="uc2" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkUser3" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorUser" target="uc3" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkGama1" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorGama" target="uc4" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkCarla1" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorCarla" target="uc5" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkCarla2" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorCarla" target="uc11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkCarla3" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorCarla" target="uc13" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="linkGama2" value="" style="endArrow=none;html=1;strokeWidth=1.5;" edge="1" source="actorGama" target="uc12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc1" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#b85450;" edge="1" source="uc6" target="uc7" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc2" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#b85450;" edge="1" source="uc6" target="uc8" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc3" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#b85450;" edge="1" source="uc6" target="uc9" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc4" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#b85450;" edge="1" source="uc6" target="uc10" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc5" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#82b366;" edge="1" source="uc6" target="uc11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc6" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#82b366;" edge="1" source="uc6" target="uc12" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc7" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#9673a6;" edge="1" source="uc4" target="uc14" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc8" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#9673a6;" edge="1" source="uc5" target="uc14" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc9" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#9673a6;" edge="1" source="uc1" target="uc14" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc10" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#9673a6;" edge="1" source="uc2" target="uc6" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc11" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#82b366;" edge="1" source="uc3" target="uc11" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="inc12" value="&lt;font style=&quot;font-size:10px&quot;&gt;&amp;lt;&amp;lt;include&amp;gt;&amp;gt;&lt;/font&gt;" style="endArrow=open;endSize=12;dashed=1;html=1;strokeColor=#9673a6;" edge="1" source="uc13" target="uc14" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

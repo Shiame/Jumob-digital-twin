@@ -27,3 +27,4 @@ docker-data/
 # === Environment ===
 .env
 *.env.local
+gcp-sa-key.json

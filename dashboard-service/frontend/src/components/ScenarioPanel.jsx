@@ -21,7 +21,7 @@ const SCENARIOS = [
   },
 ];
 
-export default function ScenarioPanel({ commands, lastCommand, events }) {
+export default function ScenarioPanel({ commands, lastCommand, events, demoMode }) {
   const scenarioStats = useMemo(() => {
     return SCENARIOS.map(s => {
       const relatedCommands = commands.filter(c => c.commandType === s.commandType);

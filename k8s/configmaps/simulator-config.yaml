@@ -1,0 +1,23 @@
+# ═══════════════════════════════════════════════════════════
+#  ConfigMap — Simulator Connection Configuration
+#  Hybrid Architecture: Simulators run on-premises,
+#  adapters in K8s connect to them via Tailscale VPN
+# ═══════════════════════════════════════════════════════════
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: simulator-config
+  namespace: midoc-dt
+  labels:
+    app.kubernetes.io/part-of: midoc-digital-twin
+    app.kubernetes.io/component: configuration
+data:
+  # ── CARLA Simulator (on-premises GPU server) ──
+  # Replace with your Tailscale IP or public IP
+  CARLA_HOST: "CARLA_TAILSCALE_IP"
+  CARLA_PORT: "2000"
+
+  # ── GAMA Simulator (on-premises workstation) ──
+  # Replace with your Tailscale IP or public IP
+  GAMA_SERVER_URL: "ws://GAMA_TAILSCALE_IP:6868"
+  GAMA_MODEL_PATH: "/home/chaymae/gama-simulation05052025/gama-simulation/models/mobilitySimulator/Launcher.gaml"

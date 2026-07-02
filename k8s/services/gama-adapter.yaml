@@ -1,0 +1,103 @@
+# ═══════════════════════════════════════════════════════════
+#  GAMA Adapter — Deployment + Service
+#  Bridges the GAMA mobility simulator (on-premises) with
+#  the cloud-based Digital Twin platform via Kafka
+#
+#  HYBRID ARCHITECTURE:
+#  Connects OUTBOUND to the GAMA server via WebSocket
+#  on the on-premises workstation (Tailscale VPN)
+# ═══════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gama-adapter
+  namespace: midoc-dt
+  labels:
+    app: gama-adapter
+    app.kubernetes.io/part-of: midoc-digital-twin
+    app.kubernetes.io/component: adapter
+    tier: edge-connector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gama-adapter
+  template:
+    metadata:
+      labels:
+        app: gama-adapter
+        app.kubernetes.io/part-of: midoc-digital-twin
+        tier: edge-connector
+    spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Kafka..."
+              until nc -z kafka.midoc-dt.svc.cluster.local 29092; do
+                sleep 3
+              done
+              echo "Kafka is ready!"
+      containers:
+        - name: gama-adapter
+          image: europe-west1-docker.pkg.dev/midoc-digital-twin/midoc/gama-adapter:latest
+          ports:
+            - containerPort: 8082
+              name: http
+          env:
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: SERVER_PORT
+              value: "8082"
+            # ── GAMA Simulator Connection (Hybrid/Edge) ──
+            - name: GAMA_SERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: simulator-config
+                  key: GAMA_SERVER_URL
+            - name: GAMA_MODEL_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: simulator-config
+                  key: GAMA_MODEL_PATH
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 45
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gama-adapter
+  namespace: midoc-dt
+  labels:
+    app: gama-adapter
+spec:
+  type: ClusterIP
+  selector:
+    app: gama-adapter
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082

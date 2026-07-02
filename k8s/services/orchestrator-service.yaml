@@ -1,0 +1,89 @@
+# ═══════════════════════════════════════════════════════════
+#  Orchestrator Service — Deployment + Service
+#  Co-simulation engine: processes events from CARLA and
+#  GAMA adapters, applies digital twin rules, and publishes
+#  commands back to the simulators via Kafka
+# ═══════════════════════════════════════════════════════════
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator-service
+  namespace: midoc-dt
+  labels:
+    app: orchestrator-service
+    app.kubernetes.io/part-of: midoc-digital-twin
+    app.kubernetes.io/component: core
+    tier: application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrator-service
+  template:
+    metadata:
+      labels:
+        app: orchestrator-service
+        app.kubernetes.io/part-of: midoc-digital-twin
+        tier: application
+    spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Kafka..."
+              until nc -z kafka.midoc-dt.svc.cluster.local 29092; do
+                sleep 3
+              done
+              echo "Kafka is ready!"
+      containers:
+        - name: orchestrator-service
+          image: europe-west1-docker.pkg.dev/midoc-digital-twin/midoc/orchestrator-service:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: SERVER_PORT
+              value: "8080"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrator-service
+  namespace: midoc-dt
+  labels:
+    app: orchestrator-service
+spec:
+  type: ClusterIP
+  selector:
+    app: orchestrator-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
